@@ -282,9 +282,10 @@ sub _dbg_timeout_cb {
     $self->_dbg_ae_time();
     my $weak_self = weaken($self);
     my $selfaddr = $self . "";
-    my $timer_start_time = Time::HiRes::time;
+    my $timer_start_time = join " ", 'ae->now=', AnyEvent->now, " time=", Time::HiRes::time();
     log_warn "Startint timer for $self at $timer_start_time";
     return sub {
+        log_warn "Timer for $self that was ser at $timer_start_time";
         $self or log_warn("Weaken self ($selfaddr) expired in timeout but watcher works!", ' ae->now=', AnyEvent->now, " time=", Time::HiRes::time());
         $self->_dbg_ae_time();
         $self->_on_timeout();
