@@ -16,7 +16,7 @@ use Method::WeakCallback qw(weak_method_callback_cached weak_method_callback);
 use Pg::PQ qw(:pgres_polling);
 
 our $debug;
-$debug ||= 0;
+$debug ||= -1;
 
 sub _debug {
     my $self = shift;
