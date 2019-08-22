@@ -11,6 +11,7 @@ use Scalar::Util qw/weaken/;
 use Time::HiRes;
 use MR::Pg;
 use AnyEvent;
+use MR::Log;
 use Method::WeakCallback qw(weak_method_callback_cached weak_method_callback);
 use Pg::PQ qw(:pgres_polling);
 
@@ -30,7 +31,7 @@ sub _debug {
     $error =~ s/\n\s*/|/msg;
     my $r = defined $self->{read_watcher};
     my $w = defined $self->{write_watcher};
-    log_dbg "[$self seq: $self->{seq}, state: $state, dbc: $dbc, fd: $fd, error: $error, dbc_status: $dbc_status (r:$r/w:$w)]\@${pkg}::$method> @_ at $file line $line\n";
+    log_dbg("[$self seq: $self->{seq}, state: $state, dbc: $dbc, fd: $fd, error: $error, dbc_status: $dbc_status (r:$r/w:$w)]\@${pkg}::$method> @_ at $file line $line\n");
 }
 
 sub _check_state {
