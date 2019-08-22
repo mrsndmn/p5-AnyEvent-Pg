@@ -274,7 +274,7 @@ sub unshift_query_prepared { shift->_push_query(_type => 'query_prepared', _unsh
 sub last_query_start_time { shift->{query_start_time} }
 
 sub _dbg_ae_time {
-    $_[0]->_debug("on_push_query timers was set for self($_[0])", ' ae->now=', AnyEvent->now, " time=", Time::HiRes::time());
+    $_[0]->_debug("timers was set for self($_[0])", ' ae->now=', AnyEvent->now, " time=", Time::HiRes::time());
 }
 
 sub _dbg_timeout_cb {
@@ -282,6 +282,8 @@ sub _dbg_timeout_cb {
     $self->_dbg_ae_time();
     my $weak_self = weaken($self);
     my $selfaddr = $self . "";
+    my $timer_start_time = Time::HiRes::time;
+    log_warn "Startint timer for $self at $timer_start_time";
     return sub {
         $self or log_warn("Weaken self ($selfaddr) expired in timeout but watcher works!", ' ae->now=', AnyEvent->now, " time=", Time::HiRes::time());
         $self->_dbg_ae_time();
