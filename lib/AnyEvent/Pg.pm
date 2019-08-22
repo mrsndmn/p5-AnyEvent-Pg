@@ -283,9 +283,9 @@ sub _dbg_timeout_cb {
     my $weak_self = weaken($self);
     my $selfaddr = $self . "";
     return sub {
-        $self->_dbg_ae_time();
-        $weak_self or log_warn("Weaken self ($selfaddr) expired in timeout but watcher works!");
-
+        $weak_self or log_warn("Weaken self ($selfaddr) expired in timeout but watcher works!", ' ae->now=', AnyEvent->now, " time=", Time::HiRes::time());
+        $weak_self->_dbg_ae_time();
+        $weak_self->_on_timeout();
     }
 }
 
