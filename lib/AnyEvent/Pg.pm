@@ -55,7 +55,7 @@ sub new {
     my $on_empty_queue = delete $opts{on_empty_queue};
     my $on_notify = delete $opts{on_notify};
     my $on_error = delete $opts{on_error};
-    my $timeout = delete $lopts{timeout};
+    my $timeout = delete $opts{timeout};
     my $seq = delete($opts{seq}) // ($next_seq++);
 
     %opts and croak "unknown option(s) ".join(", ", keys %opts)." found";
