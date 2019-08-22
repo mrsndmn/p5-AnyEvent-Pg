@@ -7,6 +7,9 @@ use strict;
 use warnings;
 use Carp;
 
+use Scalar::Util qw/weaken/;
+use Time::HiRes;
+use MR::Pg;
 use AnyEvent;
 use Method::WeakCallback qw(weak_method_callback_cached weak_method_callback);
 use Pg::PQ qw(:pgres_polling);
@@ -27,7 +30,7 @@ sub _debug {
     $error =~ s/\n\s*/|/msg;
     my $r = defined $self->{read_watcher};
     my $w = defined $self->{write_watcher};
-    warn "[$self seq: $self->{seq}, state: $state, dbc: $dbc, fd: $fd, error: $error, dbc_status: $dbc_status (r:$r/w:$w)]\@${pkg}::$method> @_ at $file line $line\n";
+    log_dbg "[$self seq: $self->{seq}, state: $state, dbc: $dbc, fd: $fd, error: $error, dbc_status: $dbc_status (r:$r/w:$w)]\@${pkg}::$method> @_ at $file line $line\n";
 }
 
 sub _check_state {
@@ -51,7 +54,7 @@ sub new {
     my $on_empty_queue = delete $opts{on_empty_queue};
     my $on_notify = delete $opts{on_notify};
     my $on_error = delete $opts{on_error};
-    my $timeout = delete $opts{timeout};
+    my $timeout = delete $lopts{timeout};
     my $seq = delete($opts{seq}) // ($next_seq++);
 
     %opts and croak "unknown option(s) ".join(", ", keys %opts)." found";
@@ -269,6 +272,22 @@ sub unshift_query_prepared { shift->_push_query(_type => 'query_prepared', _unsh
 
 sub last_query_start_time { shift->{query_start_time} }
 
+sub _dbg_ae_time {
+    $_[0]->_debug("on_push_query timers was set for self($_[0])", ' ae->now=', AnyEvent->now, " time=", Time::HiRes::time());
+}
+
+sub _dbg_timeout_cb {
+    my $self = shift;
+    $self->_dbg_ae_time();
+    my $weak_self = weaken($self);
+    my $selfaddr = $self . "";
+    return sub {
+        $self->_dbg_ae_time();
+        $weak_self or log_warn("Weaken self ($selfaddr) expired in timeout but watcher works!");
+
+    }
+}
+
 sub _on_push_query {
     my $self = shift;
     $debug and $debug & 4 and $self->_debug("_on_push_query");
@@ -285,9 +304,9 @@ sub _on_push_query {
                     next;
                 }
                 $debug and $debug & 1 and $self->_debug("want to write query");
+
                 $self->{write_watcher} = AE::io $self->{fd}, 1, weak_method_callback_cached($self, '_on_push_query_writable');
-                $self->{timeout_watcher} = AE::timer $self->{timeout}, 0, weak_method_callback_cached($self, '_on_timeout')
-                    if $self->{timeout};
+                $self->{timeout_watcher} = AE::timer $self->{timeout}, 0, $self->_dbg_timeout_cb if $self->{timeout};
                 return;
             }
 
@@ -397,7 +416,7 @@ sub _on_consume_input {
                 $debug and $debug & 1 and $self->_debug($self->{write_watcher}
                                                         ? "wants to write and read"
                                                         : "wants to read");
-                $self->{timeout_watcher} = AE::timer $self->{timeout}, 0, weak_method_callback_cached($self, '_on_timeout')
+                $self->{timeout_watcher} = AE::timer $self->{timeout}, 0, $self->_dbg_timeout_cb()
                     if $self->{timeout};
                 return;
             }

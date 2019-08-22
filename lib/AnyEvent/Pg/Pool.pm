@@ -5,7 +5,7 @@ our $VERSION = '0.14';
 use strict;
 use warnings;
 use 5.010;
-
+use MR::Log;
 use Carp qw(verbose croak);
 use Data::Dumper;
 
@@ -29,7 +29,7 @@ sub _debug {
     local ($ENV{__DIE__}, $@);
     my ($pkg, $file, $line, $method) = (caller 0);
     $method =~ s/.*:://;
-    warn "[$pool c:$connecting/i:$initializing/-:$idle/b:$busy|t:$total|d:$delayed]\@${pkg}::$method> @_ at $file line $line\n";
+    log_dbg "[$pool c:$connecting/i:$initializing/-:$idle/b:$busy|t:$total|d:$delayed]\@${pkg}::$method> @_ at $file line $line\n";
 }
 
 my %default = ( connection_retries => 3,
